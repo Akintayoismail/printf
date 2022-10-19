@@ -1,42 +1,51 @@
 #include "main.h"
 
 /**
- * get_precision - Calculates the precision for printing it.
- * @format: Formatted string in which to print the arguments.
- * @i: List of arguments to be printed.
- * @list: list of arguments.
- *
- * Return: Precision.
+ * _printf - prints and input into the standard output
+ * @format: the format string
+ * Return: number of bytes printed
  */
-int get_precision(const char *format, int *i, va_list list)
+
+int _printf(const char *format, ...)
+
 {
-	int curr_i = *i + 1;
+	int sum = 0;
+	va_list ap;
+	char *p, *start;
 
-	int precision = -1;
+	params_t params = PARAMS_INIT;
 
-	if (format[curr_i] != '.')
-		return (precision);
+	va_start(ap, format);
 
-	precision = 0;
-
-	for (curr_i += 1; format[curr_i] != '\0'; curr_i++)
+	if (!format || (format[0] == '%' && !format[1]))/* checking for NULL char */
+		return (-1);
+	if (format[0] == '%' && format[1] == ' ' && !format[2])
+		return (-1);
+	for (p = (char *)format; *p; p++)
 	{
-		if (is_digit(format[curr_i]))
+		init_params(&params, ap);
+		if (*p != '%')/*checking for the % specifier*/
 		{
-			precision *= 10;
-			precision += format[curr_i] - '0';
+			sum += _putchar(*p);
+			continue;
 		}
-		else if (format[curr_i] == '*')
+		start = p;
+		p++;
+		while (get_flag(p, &params)) /* while char at p is flag character */
 		{
-			curr_i++;
-			precision = va_arg(list, int);
-			break;
+			p++; /* next character */
 		}
+		p = get_width(p, &params, ap);
+		p = get_precision(p, &params, ap);
+		if (get_modifier(p, &params))
+			p++;
+		if (!get_specifier(p))
+			sum += print_from_to(start, p,
+					params.l_modifier || params.h_modifier ? p - 1 : 0);
 		else
-			break;
+			sum += get_print_func(p, ap, &params);
 	}
-
-	*i = curr_i - 1;
-
-	return (precision);
+	_putchar(BUF_FLUSH);
+	va_end(ap);
+	return (sum);
 }
